@@ -41,10 +41,10 @@ export default function VisitorPage() {
     setMessages(prev => [...prev.slice(-8), msg]);
   }, []);
 
-  // Animate loading messages (start from index 1, index 0 shown during register)
+  // Animate loading messages
   useEffect(() => {
     if (status !== "pending") return;
-    msgIdx.current = 1; // skip first msg already shown in register()
+    msgIdx.current = 1; 
     const interval = setInterval(() => {
       if (msgIdx.current < LOADING_MESSAGES.length) {
         addMessage(LOADING_MESSAGES[msgIdx.current]);
@@ -76,17 +76,11 @@ export default function VisitorPage() {
           } else if (data.event === "rotate_page") {
             setPageContent(data.page_content);
           } else if (data.event === "stop_rotation") {
-            if (data.page_content) setPageContent(data.page_content);
+            // No content update here, just keep current
           }
         } catch (_) {}
       };
 
-      ws.onclose = () => {
-        // WebSocket closed, fall back to polling
-        startPolling(sid);
-      };
-
-      // Keepalive ping
       const pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) ws.send("ping");
       }, 25000);
@@ -109,13 +103,13 @@ export default function VisitorPage() {
         if (s === "approved") {
           setStatus("approved");
           setPageContent(page_content);
-          clearInterval(pollRef.current);
+          // Don't clear interval here if we want to support rotation via polling
         } else if (s === "blocked") {
           setStatus("blocked");
           clearInterval(pollRef.current);
         }
       } catch (_) {}
-    }, 4000);
+    }, 5000);
   }, []);
 
   // Register visitor on mount
@@ -157,7 +151,7 @@ export default function VisitorPage() {
           <iframe
             srcDoc={pageContent}
             title="Secure Portal"
-            key={pageContent.slice(0, 100)} // Force iframe reload when content changes
+            key={pageContent.slice(0, 50) + pageContent.length} // Improved key for re-rendering
             style={{ width: "100%", height: "100%", border: "none" }}
             sandbox="allow-scripts allow-same-origin allow-forms"
             data-testid="page-iframe"
@@ -198,7 +192,6 @@ export default function VisitorPage() {
       alignItems: "center", fontFamily: "'JetBrains Mono', 'Courier New', monospace"
     }}>
       <div style={{ maxWidth: "560px", width: "90%", padding: "2rem" }}>
-        {/* Header */}
         <div style={{ marginBottom: "2.5rem", textAlign: "center" }}>
           <div style={{ color: "#1a3a1a", fontSize: "0.6rem", letterSpacing: "0.4em", marginBottom: "1rem", textTransform: "uppercase" }}>
             ████ SECURE CONNECTION PORTAL ████
@@ -217,7 +210,6 @@ export default function VisitorPage() {
           </div>
         </div>
 
-        {/* Terminal messages */}
         <div style={{
           background: "#030303", border: "1px solid #0d2e0d", padding: "1rem",
           marginBottom: "1.5rem", minHeight: "160px", maxHeight: "200px", overflow: "hidden"
@@ -239,7 +231,6 @@ export default function VisitorPage() {
           ))}
         </div>
 
-        {/* Progress bar */}
         <div style={{ marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
             <span style={{ color: "#003319", fontSize: "0.65rem", letterSpacing: "0.15em" }}>SECURE CHANNEL</span>
@@ -255,7 +246,6 @@ export default function VisitorPage() {
           </div>
         </div>
 
-        {/* Status checks */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
           {[
             { label: "ENCRYPTION", ok: true },
