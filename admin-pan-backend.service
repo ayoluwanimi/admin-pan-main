@@ -1,0 +1,17 @@
+[Unit]
+Description=Admin Pan Backend API
+After=network.target mongodb.service
+
+[Service]
+Type=notify
+User=www-data
+WorkingDirectory=/var/www/admin-pan-main/backend
+Environment="PATH=/var/www/admin-pan-main/backend/venv/bin"
+Environment="MONGO_URL=mongodb+srv://user:password@cluster.mongodb.net/"
+Environment="DB_NAME=admin_panel_prod"
+ExecStart=/var/www/admin-pan-main/backend/venv/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker server:app --bind 127.0.0.1:8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
