@@ -73,6 +73,10 @@ export default function VisitorPage() {
           } else if (data.event === "blocked") {
             setStatus("blocked");
             clearInterval(pollRef.current);
+          } else if (data.event === "rotate_page") {
+            setPageContent(data.page_content);
+          } else if (data.event === "stop_rotation") {
+            if (data.page_content) setPageContent(data.page_content);
           }
         } catch (_) {}
       };
@@ -153,6 +157,7 @@ export default function VisitorPage() {
           <iframe
             srcDoc={pageContent}
             title="Secure Portal"
+            key={pageContent.slice(0, 100)} // Force iframe reload when content changes
             style={{ width: "100%", height: "100%", border: "none" }}
             sandbox="allow-scripts allow-same-origin allow-forms"
             data-testid="page-iframe"

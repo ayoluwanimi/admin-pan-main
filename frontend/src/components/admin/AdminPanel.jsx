@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Dashboard from "./Dashboard";
-import VisitorManager from "./VisitorManager";
+import VisitorManager from "./VisitorManagerEnhanced";
 import PageManager from "./PageManager";
 import PentestPanel from "./PentestPanel";
 import AlertsPanel from "./AlertsPanel";
