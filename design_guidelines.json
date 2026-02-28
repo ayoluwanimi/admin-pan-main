@@ -1,0 +1,223 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "mission": "Create a 'Pentest Control' interface that feels like a Hollywood hacker terminal—functional, intimidating, and aesthetically precise.",
+    "core_principles": [
+      "Fusion over Imitation: Mix 'Terminal' brutishness with 'Sci-Fi' elegance.",
+      "Information Density: The Admin Panel is a cockpit. Data density is a feature, not a bug.",
+      "Visual Tension: Use high contrast (Neon on Black) to guide attention.",
+      "Narrative: The interface should feel 'illegitimate' and powerful."
+    ]
+  },
+  "typography": {
+    "font_imports": [
+      "https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+    ],
+    "families": {
+      "heading": "Chivo, sans-serif",
+      "body": "JetBrains Mono, monospace",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "usage": {
+      "headings": {
+        "weight": "900",
+        "tracking": "tracking-tighter",
+        "transform": "uppercase",
+        "classes": "font-heading text-white uppercase tracking-tighter"
+      },
+      "body": {
+        "weight": "400",
+        "tracking": "tracking-normal",
+        "classes": "font-mono text-gray-400"
+      },
+      "data": {
+        "weight": "500",
+        "classes": "font-mono text-accent"
+      },
+      "labels": {
+        "weight": "700",
+        "tracking": "tracking-widest",
+        "transform": "uppercase",
+        "size": "text-xs",
+        "classes": "text-[10px] uppercase tracking-[0.2em] text-gray-500"
+      }
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "primary": "#0a0a0a",
+        "secondary": "#111111",
+        "tertiary": "#1a1a1a"
+      },
+      "accent": {
+        "primary": "#00ff88",
+        "dim": "rgba(0, 255, 136, 0.2)",
+        "glow": "0 0 20px rgba(0, 255, 136, 0.5)"
+      },
+      "status": {
+        "danger": "#ff4444",
+        "warning": "#ffaa00",
+        "success": "#00ff88",
+        "neutral": "#404040"
+      },
+      "text": {
+        "primary": "#ffffff",
+        "secondary": "#a1a1aa",
+        "muted": "#52525b"
+      },
+      "border": {
+        "default": "#27272a",
+        "active": "#00ff88"
+      }
+    },
+    "tailwind_config_extension": {
+      "colors": {
+        "background": "#0a0a0a",
+        "foreground": "#ffffff",
+        "card": "#111111",
+        "card-foreground": "#ffffff",
+        "popover": "#111111",
+        "popover-foreground": "#ffffff",
+        "primary": "#00ff88",
+        "primary-foreground": "#000000",
+        "secondary": "#1a1a1a",
+        "secondary-foreground": "#ffffff",
+        "muted": "#27272a",
+        "muted-foreground": "#a1a1aa",
+        "accent": "#00ff88",
+        "accent-foreground": "#000000",
+        "destructive": "#ff4444",
+        "destructive-foreground": "#ffffff",
+        "border": "#27272a",
+        "input": "#27272a",
+        "ring": "#00ff88"
+      }
+    }
+  },
+  "visual_enhancers": {
+    "scanlines": {
+      "css": "background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2)); background-size: 100% 4px; pointer-events: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; opacity: 0.15;"
+    },
+    "glow": {
+      "text": "text-shadow: 0 0 10px rgba(0,255,136,0.5)",
+      "box": "box-shadow: 0 0 20px rgba(0,255,136,0.1)"
+    },
+    "borders": {
+      "tech": "border border-border/40 bg-card/50 backdrop-blur-md"
+    },
+    "crt_flicker": {
+      "animation": "animate-pulse opacity-95"
+    }
+  },
+  "layout": {
+    "strategy": "The Bento Grid - Mode B (High Density)",
+    "container": "max-w-[1600px] mx-auto p-4 md:p-6",
+    "grid_classes": "grid grid-cols-1 md:grid-cols-4 gap-4",
+    "spacing": {
+      "panel_padding": "p-4",
+      "section_gap": "gap-6"
+    },
+    "admin_dashboard_structure": {
+      "sidebar": "fixed left-0 top-0 h-full w-64 bg-secondary border-r border-border hidden md:flex flex-col z-40",
+      "main_content": "md:ml-64 min-h-screen bg-background relative"
+    }
+  },
+  "components": {
+    "card": {
+      "style": "flat",
+      "radius": "rounded-none",
+      "border": "border border-white/10",
+      "background": "bg-card/50",
+      "extra": "relative overflow-hidden group hover:border-accent/50 transition-colors duration-300"
+    },
+    "button": {
+      "primary": "bg-accent text-accent-foreground hover:bg-accent/90 rounded-none font-mono uppercase tracking-wider text-sm h-10 px-6",
+      "secondary": "bg-transparent border border-accent text-accent hover:bg-accent/10 rounded-none font-mono uppercase tracking-wider text-sm h-10 px-6",
+      "destructive": "bg-destructive/20 text-destructive border border-destructive hover:bg-destructive/30 rounded-none font-mono uppercase tracking-wider text-sm h-10 px-6"
+    },
+    "input": {
+      "base": "bg-secondary/50 border-border rounded-none focus:border-accent focus:ring-0 font-mono text-sm h-10"
+    },
+    "badge": {
+      "base": "rounded-none font-mono uppercase text-[10px] tracking-wider px-2 py-0.5 border",
+      "variants": {
+        "success": "bg-green-500/10 text-green-500 border-green-500/20",
+        "warning": "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+        "danger": "bg-red-500/10 text-red-500 border-red-500/20"
+      }
+    },
+    "terminal_window": {
+      "wrapper": "bg-[#050505] border border-white/10 font-mono text-sm p-4 rounded-none h-full overflow-hidden flex flex-col",
+      "header": "flex items-center gap-2 border-b border-white/5 pb-2 mb-2 text-xs text-muted-foreground uppercase tracking-widest",
+      "content": "flex-1 overflow-y-auto font-mono text-xs space-y-1 scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent"
+    }
+  },
+  "feature_specific": {
+    "visitor_page": {
+      "concept": "The Fake Loading Screen",
+      "elements": [
+        "A centered progress bar or 'System Check' list.",
+        "Monospace text typing out vague status messages: 'Establishing secure connection...', 'Verifying handshake...', 'Encrypting payload...'.",
+        "No branding, just raw utility aesthetics.",
+        "Dark background, minimal green/white text."
+      ]
+    },
+    "pentest_panel": {
+      "concept": "The Command Deck",
+      "elements": [
+        "Dense tables with 'Target', 'Status', 'Vulnerabilities' columns.",
+        "Real-time logs scrolling in a terminal-like window.",
+        "Map visualization for IP tracking (if applicable) using simple dots.",
+        "Action buttons should feel heavy and consequential (red/orange for attacks)."
+      ]
+    }
+  },
+  "motion": {
+    "reduced_motion": "respect-preference",
+    "presets": {
+      "fade_in": {
+        "initial": { "opacity": 0 },
+        "animate": { "opacity": 1 },
+        "transition": { "duration": 0.2 }
+      },
+      "slide_up": {
+        "initial": { "y": 10, "opacity": 0 },
+        "animate": { "y": 0, "opacity": 1 },
+        "transition": { "duration": 0.3, "ease": "easeOut" }
+      },
+      "glitch_hover": "hover:animate-pulse cursor-pointer"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons.",
+    "Install 'recharts' for data visualization.",
+    "Install 'framer-motion' for complex animations.",
+    "Update 'tailwind.config.js' with the colors provided in this file.",
+    "Use 'sonner' for toast notifications (styled as system alerts).",
+    "For the Visitor Page: Create a 'StealthLoader' component that simulates a system check.",
+    "For the Admin Dashboard: Use a persistent SidebarLayout.",
+    "Implement a 'ScanlineOverlay' component in the root layout to give the whole app a subtle retro-terminal feel.",
+    "Ensure all timestamps are displayed in UTC or ISO format for technical accuracy."
+  ],
+  "universal_guidelines": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) BUT keep borders sharp (tech glass).",
+    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add '.App { text-align: center; }' in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡 etc for icons. Use Lucide icons instead.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories = main agent will use placeholder text which is FORBIDDEN.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Components MUST use named exports (export const ComponentName = ...).",
+    "Pages MUST use default exports (export default function PageName() {...}).",
+    "Use 'sonner' for toasts.",
+    "All interactive and key informational elements MUST include a 'data-testid' attribute."
+  ]
+}
