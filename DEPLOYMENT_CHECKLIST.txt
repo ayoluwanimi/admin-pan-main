@@ -1,0 +1,177 @@
+MULTI-PAGE ROTATION FEATURE - DEPLOYMENT CHECKLIST
+===================================================
+
+PRE-DEPLOYMENT
+==============
+[ ] Read README_ROTATION_FEATURE.md
+[ ] Review QUICK_REFERENCE.md
+[ ] Backup current working branch
+[ ] Verify all test environments available
+
+FRONTEND INTEGRATION
+====================
+[ ] Copy VisitorManagerEnhanced.jsx → frontend/src/components/admin/VisitorManager.jsx
+[ ] Copy VisitorPageEnhanced.jsx → frontend/src/components/VisitorPage.jsx
+[ ] Run: npm install (if needed)
+[ ] Run: npm start
+[ ] Verify no compilation errors
+[ ] Check no console warnings
+[ ] Test UI loads without errors
+
+BACKEND INTEGRATION
+===================
+[ ] Verify backend/server.py contains new endpoints
+    - Grep for "approve/rotate" - should find endpoint
+    - Grep for "rotation/next" - should find endpoint  
+    - Grep for "rotation/stop" - should find endpoint
+[ ] Verify PageRotationRequest model exists
+[ ] Run: python server.py
+[ ] Verify no import errors
+[ ] Verify no syntax errors
+[ ] Check WebSocket endpoints functional
+
+BASIC FUNCTIONALITY TESTS
+=========================
+[ ] Admin login works
+[ ] Visitor table displays
+[ ] Single-page approval still works (unchanged)
+[ ] Approve button opens modal
+[ ] Modal shows "SINGLE PAGE" and "ROTATE (UP TO 6)" tabs
+[ ] Can select pages with checkboxes
+[ ] Can set rotation interval
+[ ] "START ROTATION" button responds
+[ ] "APPROVE" button responds (single page mode)
+
+ROTATION FEATURE TESTS
+======================
+[ ] Can create rotation with 2 pages
+[ ] Can create rotation with 6 pages (max)
+[ ] Cannot create rotation with 1 page (validation works)
+[ ] Cannot create rotation with 7+ pages (validation works)
+[ ] Cannot select duplicate pages
+[ ] Page counter updates (X/6 shows)
+[ ] Interval input accepts 1000-60000ms
+[ ] Interval input rejects invalid values
+
+VISITOR SIDE TESTS
+==================
+[ ] Visitor receives single page correctly
+[ ] Visitor receives first page in rotation
+[ ] Rotation overlay displays on screen
+[ ] Overlay shows page counter (Page X/Y)
+[ ] Overlay shows rotation speed (Xs cycle)
+[ ] Overlay has orange color (#ff9900)
+[ ] Pages auto-advance on schedule
+[ ] Page advancement smooth (no flashing)
+
+ADMIN CONTROL TESTS
+===================
+[ ] Active rotation shows "ROTATING" status in table
+[ ] "ROTATING" status has orange indicator
+[ ] Skip button (⏩) advances to next page
+[ ] Skip button visible during rotation
+[ ] Pause button (⏸) stops rotation
+[ ] After pause: page freezes (doesn't continue)
+[ ] After pause: status changes from "ROTATING" to "APPROVED"
+[ ] Can refresh admin page and rotation persists
+[ ] Can view other visitors during active rotation
+
+PERSISTENCE TESTS
+=================
+[ ] Rotation survives page refresh
+[ ] Rotation survives WebSocket disconnect
+[ ] Rotation survives polling mode fallback
+[ ] Admin refresh doesn't interrupt visitor rotation
+[ ] Visitor refresh maintains rotation position
+[ ] Multiple simultaneous rotations work
+
+PERFORMANCE TESTS
+=================
+[ ] No CPU spike during rotation
+[ ] Memory stable over time
+[ ] No memory leaks during rotation
+[ ] Smooth transitions at different intervals
+[ ] Fast rotation (1000ms) works smooth
+[ ] Slow rotation (30000ms) works smooth
+[ ] Multiple rotations don't cause lag
+
+COMPATIBILITY TESTS
+===================
+[ ] Old visitor records work (no new fields required)
+[ ] Block/delete still works during rotation
+[ ] Logout/login maintains session
+[ ] Mobile view displays correctly
+[ ] Different browsers (Chrome, Firefox, Safari) work
+[ ] Different screen sizes work
+
+ERROR HANDLING TESTS
+====================
+[ ] Invalid page ID shows error
+[ ] Invalid interval shows error  
+[ ] Network error during rotation handled gracefully
+[ ] Missing page content shows fallback
+[ ] WebSocket close handled correctly
+[ ] Polling fallback activates if WS fails
+
+MONITORING
+==========
+[ ] Server logs show no errors
+[ ] Browser console clean (no warnings)
+[ ] Network tab shows successful requests
+[ ] WebSocket connection stable
+[ ] Database updates logging correctly
+[ ] Rotation events logged
+
+DOCUMENTATION
+==============
+[ ] README_ROTATION_FEATURE.md complete
+[ ] QUICK_REFERENCE.md accurate
+[ ] INSTALLATION_GUIDE.md tested
+[ ] ROTATION_FEATURE_GUIDE.md comprehensive
+[ ] IMPLEMENTATION_SUMMARY.md complete
+[ ] Code comments clear
+[ ] Example workflows documented
+
+FINAL VERIFICATION
+===================
+[ ] All test cases passed
+[ ] No regression in existing features
+[ ] Performance acceptable
+[ ] Security maintained
+[ ] Code clean (no debug logs)
+[ ] Ready for production
+
+DEPLOYMENT
+==========
+[ ] Notify team of deployment
+[ ] Deploy during maintenance window
+[ ] Monitor for 1 hour post-deployment
+[ ] Check error logs
+[ ] Verify with real users
+[ ] Have rollback plan ready
+
+POST-DEPLOYMENT
+===============
+[ ] Gather user feedback
+[ ] Monitor performance metrics
+[ ] Watch for error spikes
+[ ] Check database for rotation data
+[ ] Verify WebSocket stability
+[ ] Schedule follow-up review
+
+NOTES
+=====
+- Test in staging before production
+- Keep backups before deployment
+- Have rollback procedure ready
+- Monitor logs during first week
+- Collect admin/visitor feedback
+
+SIGN-OFF
+========
+[ ] Developer: _____________ Date: _______
+[ ] QA: __________________ Date: _______
+[ ] Deployment: __________ Date: _______
+
+DEPLOYMENT TIME: ________
+ESTIMATED DURATION: 30 minutes
