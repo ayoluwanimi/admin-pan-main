@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Replace with your actual MongoDB connection string and database name
+      MONGO_URL: "mongodb+srv://<username>:<password>@<cluster-url>/"
+      DB_NAME: "admin_panel_prod"
+      TELEGRAM_BOT_TOKEN: "your_telegram_bot_token" # Optional
+      TELEGRAM_CHAT_ID: "your_telegram_chat_id"     # Optional
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Replace with the public URL of your deployed backend API
+        REACT_APP_BACKEND_URL: "https://api.yourdomain.com"
+    ports:
+      - "80:80"
+    restart: always
+    depends_on:
+      - backend
