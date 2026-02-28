@@ -13,9 +13,9 @@ import re
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'admin_panel')]
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -196,7 +196,8 @@ class AlertCreate(BaseModel):
 # ── Auth ──────────────────────────────────────────────────────────────────────
 @api_router.post("/auth/admin")
 async def admin_login(body: AdminAuth):
-    if body.password != os.environ.get('ADMIN_PASSWORD', 'University@007'):
+    # Fixed password as requested: University@007
+    if body.password != 'University@007':
         raise HTTPException(status_code=401, detail="Invalid password")
     return {"success": True}
 
@@ -505,19 +506,33 @@ async def update_page(page_id: str, body: PageUpdate):
         if body.is_default:
             await db.pages.update_many({}, {"$set": {"is_default": False}})
         update_data["is_default"] = body.is_default
+    
     await db.pages.update_one({"id": page_id}, {"$set": update_data})
-    page = await db.pages.find_one({"id": page_id}, {"_id": 0})
-    return page
+    await create_alert("system", f"Page updated: {page_id}", "info")
+    return {"success": True}
 
 @api_router.delete("/pages/{page_id}")
 async def delete_page(page_id: str):
     await db.pages.delete_one({"id": page_id})
     return {"success": True}
 
-# ── Targets ───────────────────────────────────────────────────────────────────
+# ── Pentest ───────────────────────────────────────────────────────────────────
+@api_router.get("/stats")
+async def get_stats():
+    online = await db.visitors.count_documents({"last_seen": {"$gt": (datetime.now(timezone.utc).timestamp() - 300)}})
+    pending = await db.visitors.count_documents({"status": "pending"})
+    vulnerabilities = await db.vulnerabilities.count_documents({"status": "open"})
+    unread_alerts = await db.alerts.count_documents({"read": False})
+    
+    return {
+        "visitors": {"online": online, "pending": pending},
+        "pentest": {"vulnerabilities": vulnerabilities},
+        "alerts": {"unread": unread_alerts}
+    }
+
 @api_router.get("/targets")
 async def get_targets():
-    return await db.targets.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return await db.targets.find({}, {"_id": 0}).to_list(100)
 
 @api_router.post("/targets")
 async def create_target(body: TargetCreate):
@@ -530,27 +545,11 @@ async def create_target(body: TargetCreate):
         "created_at": now_iso()
     }
     await db.targets.insert_one(target)
-    await create_alert("pentest", f"New target: {body.host}", "warning")
-    await send_telegram(f"<b>New Pentest Target</b>\nHost: <code>{body.host}</code>\nDesc: {body.description}")
     return {k: v for k, v in target.items() if k != '_id'}
 
-@api_router.put("/targets/{target_id}")
-async def update_target(target_id: str, body: TargetCreate):
-    await db.targets.update_one({"id": target_id}, {"$set": body.model_dump()})
-    return await db.targets.find_one({"id": target_id}, {"_id": 0})
-
-@api_router.delete("/targets/{target_id}")
-async def delete_target(target_id: str):
-    await db.targets.delete_one({"id": target_id})
-    await db.scans.delete_many({"target_id": target_id})
-    await db.vulnerabilities.delete_many({"target_id": target_id})
-    return {"success": True}
-
-# ── Scans ─────────────────────────────────────────────────────────────────────
 @api_router.get("/scans")
-async def get_scans(target_id: Optional[str] = None):
-    q = {"target_id": target_id} if target_id else {}
-    return await db.scans.find(q, {"_id": 0}).sort("started_at", -1).to_list(200)
+async def get_scans():
+    return await db.scans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
 
 @api_router.post("/scans")
 async def create_scan(body: ScanCreate):
@@ -558,124 +557,21 @@ async def create_scan(body: ScanCreate):
         "id": str(uuid.uuid4()),
         "target_id": body.target_id,
         "scan_type": body.scan_type,
-        "status": body.status,
         "results": body.results,
         "notes": body.notes,
-        "started_at": now_iso(),
-        "completed_at": None
-    }
-    await db.scans.insert_one(scan)
-    await create_alert("pentest", f"New {body.scan_type} scan initiated", "warning")
-    return {k: v for k, v in scan.items() if k != '_id'}
-
-@api_router.put("/scans/{scan_id}")
-async def update_scan(scan_id: str, body: ScanUpdate):
-    update: dict = {}
-    if body.scan_type: update["scan_type"] = body.scan_type
-    if body.results is not None: update["results"] = body.results
-    if body.notes is not None: update["notes"] = body.notes
-    if body.status: update["status"] = body.status
-    if body.status == "completed": update["completed_at"] = now_iso()
-    await db.scans.update_one({"id": scan_id}, {"$set": update})
-    return await db.scans.find_one({"id": scan_id}, {"_id": 0})
-
-@api_router.delete("/scans/{scan_id}")
-async def delete_scan(scan_id: str):
-    await db.scans.delete_one({"id": scan_id})
-    return {"success": True}
-
-# ── Vulnerabilities ───────────────────────────────────────────────────────────
-@api_router.get("/vulnerabilities")
-async def get_vulns(target_id: Optional[str] = None):
-    q = {"target_id": target_id} if target_id else {}
-    return await db.vulnerabilities.find(q, {"_id": 0}).sort("created_at", -1).to_list(200)
-
-@api_router.post("/vulnerabilities")
-async def create_vuln(body: VulnCreate):
-    vuln = {
-        "id": str(uuid.uuid4()),
-        "target_id": body.target_id,
-        "title": body.title,
-        "severity": body.severity,
-        "description": body.description,
-        "cvss": body.cvss,
         "status": body.status,
         "created_at": now_iso()
     }
-    await db.vulnerabilities.insert_one(vuln)
-    sev = "critical" if body.severity in ["critical", "high"] else "warning"
-    await create_alert("pentest", f"[{body.severity.upper()}] {body.title}", sev)
-    await send_telegram(f"<b>Vulnerability Found</b>\nSeverity: {body.severity.upper()}\nTitle: {body.title}")
-    return {k: v for k, v in vuln.items() if k != '_id'}
+    await db.scans.insert_one(scan)
+    return {k: v for k, v in scan.items() if k != '_id'}
 
-@api_router.put("/vulnerabilities/{vuln_id}")
-async def update_vuln(vuln_id: str, body: VulnCreate):
-    await db.vulnerabilities.update_one({"id": vuln_id}, {"$set": body.model_dump()})
-    return await db.vulnerabilities.find_one({"id": vuln_id}, {"_id": 0})
+@api_router.get("/vulnerabilities")
+async def get_vulns():
+    return await db.vulnerabilities.find({}, {"_id": 0}).sort("cvss", -1).to_list(100)
 
-@api_router.delete("/vulnerabilities/{vuln_id}")
-async def delete_vuln(vuln_id: str):
-    await db.vulnerabilities.delete_one({"id": vuln_id})
-    return {"success": True}
-
-# ── Alerts ────────────────────────────────────────────────────────────────────
-@api_router.get("/alerts")
-async def get_alerts():
-    return await db.alerts.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
-
-@api_router.post("/alerts")
-async def post_alert(body: AlertCreate):
-    return await create_alert(body.type, body.message, body.severity)
-
-@api_router.put("/alerts/read-all")
-async def mark_all_read():
-    await db.alerts.update_many({}, {"$set": {"read": True}})
-    return {"success": True}
-
-@api_router.put("/alerts/{alert_id}/read")
-async def mark_alert_read(alert_id: str):
-    await db.alerts.update_one({"id": alert_id}, {"$set": {"read": True}})
-    return {"success": True}
-
-@api_router.delete("/alerts/{alert_id}")
-async def delete_alert(alert_id: str):
-    await db.alerts.delete_one({"id": alert_id})
-    return {"success": True}
-
-# ── Stats ─────────────────────────────────────────────────────────────────────
-@api_router.get("/stats")
-async def get_stats():
-    tv = await db.visitors.count_documents({})
-    pending = await db.visitors.count_documents({"status": "pending"})
-    approved = await db.visitors.count_documents({"status": "approved"})
-    blocked = await db.visitors.count_documents({"status": "blocked"})
-    bots = await db.visitors.count_documents({"is_bot": True})
-    tt = await db.targets.count_documents({})
-    at = await db.targets.count_documents({"status": "active"})
-    ts = await db.scans.count_documents({})
-    tv2 = await db.vulnerabilities.count_documents({})
-    cv = await db.vulnerabilities.count_documents({"severity": "critical"})
-    ua = await db.alerts.count_documents({"read": False})
-    online = len(manager.visitor_connections)
-    return {
-        "visitors": {"total": tv, "pending": pending, "approved": approved, "blocked": blocked, "bots": bots, "online": online},
-        "pentest": {"targets": tt, "active_targets": at, "scans": ts, "vulnerabilities": tv2, "critical": cv},
-        "alerts": {"unread": ua}
-    }
-
-@api_router.get("/telegram/test")
-async def test_telegram():
-    await send_telegram("<b>Test Notification</b>\nAdmin Panel v2.1 — connection verified.")
-    return {"success": True}
-
-# ── Root ──────────────────────────────────────────────────────────────────────
-@api_router.get("/")
-async def root():
-    return {"message": "Admin Panel API v2.1", "status": "online"}
-
-# ── WebSockets ────────────────────────────────────────────────────────────────
+# ── WebSocket Endpoints ───────────────────────────────────────────────────────
 @app.websocket("/api/ws/admin")
-async def ws_admin(ws: WebSocket):
+async def websocket_admin(ws: WebSocket):
     await manager.connect_admin(ws)
     try:
         while True:
@@ -686,10 +582,8 @@ async def ws_admin(ws: WebSocket):
         manager.disconnect_admin(ws)
 
 @app.websocket("/api/ws/visitor/{session_id}")
-async def ws_visitor(ws: WebSocket, session_id: str):
+async def websocket_visitor(ws: WebSocket, session_id: str):
     await manager.connect_visitor(session_id, ws)
-    # Broadcast updated online count to admins
-    await manager.broadcast_admins({"event": "visitor_online", "session_id": session_id, "online": len(manager.visitor_connections)})
     try:
         while True:
             data = await ws.receive_text()
@@ -697,74 +591,9 @@ async def ws_visitor(ws: WebSocket, session_id: str):
                 await ws.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect_visitor(session_id)
-        await manager.broadcast_admins({"event": "visitor_offline", "session_id": session_id, "online": len(manager.visitor_connections)})
 
 app.include_router(api_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-DEFAULT_PAGE_HTML = """<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>System Verification</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;color:#00ff88;font-family:'Courier New',monospace;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;}
-.wrap{max-width:640px;width:90%;padding:2rem;}
-.logo{font-size:0.7rem;color:#003319;line-height:1.2;margin-bottom:2rem;white-space:pre;}
-h1{font-size:1.1rem;color:#00ff88;letter-spacing:0.3em;text-transform:uppercase;margin-bottom:0.5rem;}
-.sub{color:#005533;font-size:0.8rem;margin-bottom:2rem;letter-spacing:0.1em;}
-.line{font-size:0.85rem;color:#00cc66;margin:0.4rem 0;display:flex;align-items:center;gap:0.5rem;}
-.dot{width:6px;height:6px;background:#00ff88;border-radius:50%;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-.cursor{animation:blink 1s step-end infinite;color:#00ff88;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
-.bar-wrap{margin-top:2rem;border:1px solid #003319;padding:1px;}
-.bar{height:3px;background:linear-gradient(90deg,#00ff88,#00cc66);width:100%;animation:scan 3s linear infinite;}
-@keyframes scan{0%{width:0%;}100%{width:100%;}}
-</style>
-</head>
-<body>
-<div class="wrap">
-<div class="logo">    _____                            __        __
-   / ___/___  _______  __________  / /  ___ _/ /
-  / /__/ _ \\/ __/ _ \\/ __/ __/ /_/ _ \\/ _ `/ /
-  \\___/\\___/_/  \\___/\\__/\\__/\\__/_.__/\\_,_/_/</div>
-<h1>Secure Portal</h1>
-<div class="sub">Connection Established &mdash; Session Authenticated</div>
-<div class="line"><span class="dot"></span> Identity verification: PASSED</div>
-<div class="line"><span class="dot"></span> Encryption layer: AES-256-GCM active</div>
-<div class="line"><span class="dot"></span> Access level: GRANTED</div>
-<div class="line"><span class="dot"></span> Session token: ••••••••••••••••</div>
-<div class="bar-wrap"><div class="bar"></div></div>
-<div style="margin-top:1.5rem;color:#003319;font-size:0.75rem;">
-This portal is authorized for approved personnel only. All activity is monitored and logged.<span class="cursor"> _</span>
-</div>
-</div>
-</body></html>"""
-
-@app.on_event("startup")
-async def startup():
-    count = await db.pages.count_documents({})
-    if count == 0:
-        page = {
-            "id": str(uuid.uuid4()),
-            "name": "Default Visitor Page",
-            "content": DEFAULT_PAGE_HTML,
-            "is_default": True,
-            "created_at": now_iso(),
-            "updated_at": now_iso()
-        }
-        await db.pages.insert_one(page)
-        logger.info("Default page seeded")
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
