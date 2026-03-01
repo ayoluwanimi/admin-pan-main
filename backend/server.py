@@ -445,6 +445,13 @@ async def get_pages():
     pages = await db.pages.find({}, {"_id": 0, "content": 0}).sort("created_at", -1).to_list(100)
     return pages
 
+@api_router.get("/pages/{page_id}")
+async def get_page(page_id: str):
+    page = await db.pages.find_one({"id": page_id}, {"_id": 0})
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found")
+    return page
+
 @api_router.post("/pages")
 async def create_page(body: PageCreate):
     if body.is_default:

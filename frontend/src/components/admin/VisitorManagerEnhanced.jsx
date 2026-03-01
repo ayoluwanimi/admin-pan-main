@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { CheckCircle, XCircle, Trash2, RefreshCw, Globe, Bot, Monitor, Pause, FastForward } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, RefreshCw, Globe, Bot, Monitor, Pause, FastForward, Eye, X } from "lucide-react";
 
 const API = process.env.REACT_APP_BACKEND_URL + "/api";
 
@@ -19,6 +19,11 @@ export default function VisitorManager({ liveEvents }) {
   const [selectedPages, setSelectedPages] = useState([]);
   const [rotationInterval, setRotationInterval] = useState(5000); 
   const [isRotatingMode, setIsRotatingMode] = useState(false);
+  
+  // Preview modal state
+  const [previewModal, setPreviewModal] = useState(null);
+  const [previewContent, setPreviewContent] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,6 +112,23 @@ export default function VisitorManager({ liveEvents }) {
     }
   };
 
+  const handlePreviewPage = async (pageId) => {
+    setPreviewLoading(true);
+    try {
+      const res = await axios.get(`${API}/pages/${pageId}`);
+      setPreviewContent(res.data.content);
+      setPreviewModal(pageId);
+    } catch (err) {
+      console.error("Preview failed:", err);
+    }
+    setPreviewLoading(false);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewModal(null);
+    setPreviewContent(null);
+  };
+
   const handleBlock = async (id) => {
     try {
       await axios.put(`${API}/visitors/${id}/block`);
@@ -175,20 +197,35 @@ export default function VisitorManager({ liveEvents }) {
                 <label style={{ color: "#555", fontSize: "0.6rem", letterSpacing: "0.15em", display: "block", marginBottom: "0.3rem" }}>
                   ASSIGN PAGE (optional)
                 </label>
-                <select
-                  value={selectedPage}
-                  onChange={e => setSelectedPage(e.target.value)}
-                  style={{
-                    width: "100%", background: "#0a0a0a", border: "1px solid #222",
-                    color: "#ccc", padding: "0.5rem", fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: "0.75rem", outline: "none"
-                  }}
-                >
-                  <option value="">Use Default Page</option>
-                  {pages.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}{p.is_default ? " (default)" : ""}</option>
-                  ))}
-                </select>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <select
+                    value={selectedPage}
+                    onChange={e => setSelectedPage(e.target.value)}
+                    style={{
+                      flex: 1, background: "#0a0a0a", border: "1px solid #222",
+                      color: "#ccc", padding: "0.5rem", fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: "0.75rem", outline: "none"
+                    }}
+                  >
+                    <option value="">Use Default Page</option>
+                    {pages.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}{p.is_default ? " (default)" : ""}</option>
+                    ))}
+                  </select>
+                  {selectedPage && (
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewPage(selectedPage)}
+                      title="Preview page"
+                      style={{
+                        background: "transparent", border: "1px solid #222", color: "#666",
+                        cursor: "pointer", padding: "0.5rem", display: "flex", alignItems: "center"
+                      }}
+                    >
+                      <Eye size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -218,9 +255,23 @@ export default function VisitorManager({ liveEvents }) {
                         }}
                         style={{ cursor: "pointer" }}
                       />
-                      <span style={{ color: "#888", fontSize: "0.75rem" }}>
+                      <span style={{ color: "#888", fontSize: "0.75rem", flex: 1 }}>
                         {p.name}{p.is_default ? " (default)" : ""}
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePreviewPage(p.id);
+                        }}
+                        title="Preview page"
+                        style={{
+                          background: "transparent", border: "none", color: "#666",
+                          cursor: "pointer", padding: "0.2rem", display: "flex", alignItems: "center"
+                        }}
+                      >
+                        <Eye size={14} />
+                      </button>
                     </label>
                   ))}
                 </div>
@@ -272,6 +323,61 @@ export default function VisitorManager({ liveEvents }) {
               >
                 CANCEL
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Page Preview Modal */}
+      {previewModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "#000000cc", zIndex: 1100,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem"
+        }}>
+          <div style={{
+            background: "#080808", border: "1px solid #00ff8833",
+            width: "100%", maxWidth: "900px", maxHeight: "90vh", display: "flex", flexDirection: "column"
+          }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "1rem", borderBottom: "1px solid #111"
+            }}>
+              <div style={{ color: "#00ff88", fontSize: "0.8rem", letterSpacing: "0.2em" }}>
+                PAGE PREVIEW
+              </div>
+              <button
+                onClick={handleClosePreview}
+                style={{
+                  background: "transparent", border: "none", color: "#666",
+                  cursor: "pointer", padding: "0.3rem"
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: "hidden", background: "#fff" }}>
+              {previewLoading ? (
+                <div style={{
+                  display: "flex", justifyContent: "center", alignItems: "center",
+                  height: "100%", color: "#333"
+                }}>
+                  Loading preview...
+                </div>
+              ) : previewContent ? (
+                <iframe
+                  srcDoc={previewContent}
+                  title="Page Preview"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
+              ) : (
+                <div style={{
+                  display: "flex", justifyContent: "center", alignItems: "center",
+                  height: "100%", color: "#666"
+                }}>
+                  No content available
+                </div>
+              )}
             </div>
           </div>
         </div>
